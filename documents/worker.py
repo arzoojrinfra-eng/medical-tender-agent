@@ -467,6 +467,8 @@ def make_pack(tender, docs, other, result, issues, model):
                        "sha256": hashlib.sha256(d["data"]).hexdigest()} for d in docs],
         "analysis": result}
     (folder / "Evidence.json").write_text(json.dumps(evidence, ensure_ascii=False, indent=2), encoding="utf-8")
+    (folder / "Processing-Status.txt").write_text(
+        "Word pack generated. Read Review-Notes.docx for missing attachments, unverified quotes, and corrigendum checks before use.\n", encoding="utf-8")
     # Verify every generated DOCX is a well-formed editable Word package.
     for file in folder.glob("*.docx"):
         reopened = Document(file)
@@ -504,6 +506,7 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     records, _ = capture_selections(g)
     processed = 0
+    failed = 0
     for i, record in enumerate(records):
         if processed >= 2:
             break
@@ -517,12 +520,24 @@ def main():
         restore_views(g)
         try:
             docs, other, issues = collect_documents(record[4], record[1])
+            folder = OUT / re.sub(r"[^A-Za-z0-9_-]+", "-", record[1])
+            folder.mkdir(parents=True, exist_ok=True)
+            for source in docs:
+                (folder / source["file"]).write_bytes(source["data"])
+            (folder / "Processing-Status.txt").write_text(
+                "Original documents retrieved. Checklist and editable Word annexures are still being processed.\n" +
+                "\n".join(issues), encoding="utf-8")
+            record[5] = publish_archive(g, folder)
+            record[3] = "Processing — originals available"
+            update_record(g, i, record)
+            restore_views(g)
             result, model = analyze(docs, record[1])
             issues.extend(validate_analysis(result, docs))
             folder = make_pack(record[1], docs, other, result, issues, model)
             record[5] = publish_archive(g, folder)
             record[3] = "Needs review — Word pack available" if issues or result["issues"] else "Ready"
         except Exception as exc:
+            failed += 1
             # Log only a short scrubbed message; never a request/body/credential.
             message = str(exc)
             for name in ("GEMINI_API_KEY", "GOOGLE_OAUTH_ACCESS_TOKEN"):
@@ -534,7 +549,9 @@ def main():
         update_record(g, i, record)
         restore_views(g)
     restore_views(g)
-    print(json.dumps({"finished": now(), "processed": processed, "queue_count": len(records)}))
+    print(json.dumps({"finished": now(), "processed": processed, "failed": failed, "queue_count": len(records)}))
+    if failed:
+        sys.exit(2)
 
 
 if __name__ == "__main__":
