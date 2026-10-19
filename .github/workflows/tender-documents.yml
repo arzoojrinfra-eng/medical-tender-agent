@@ -43,5 +43,6 @@ jobs:
           GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           DOCUMENT_ARCHIVE_FILE_ID: ${{ vars.DOCUMENT_ARCHIVE_FILE_ID }}
-          GEMINI_MODEL: gemini-2.5-flash
+          DOCUMENT_SOURCE_CACHE_FILE_ID: ${{ vars.DOCUMENT_SOURCE_CACHE_FILE_ID }}
+          GEMINI_MODEL: gemini-3.5-flash-lite
         run: python documents/worker.py

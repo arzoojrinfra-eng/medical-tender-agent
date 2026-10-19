@@ -3,13 +3,18 @@
 In Daily Tender Report, select `Prepare Checklist` in column **N (ACTION)**.
 The worker scans selections on a five-minute GitHub Actions schedule. GitHub may
 delay scheduled runs; this is not a one-minute service guarantee. It runs in the
-cloud and does not require the user's computer to stay on.
+cloud. GeM currently refuses connections from the GitHub runner. A local source
+relay downloads official PDFs and stages them in a private owner-created Drive
+cache. For this fallback, the user's computer must be on and the Google account
+must remain authorized. Cloud-only GeM retrieval is not working and is not claimed.
 
 Column O shows status, P the official original URL, and Q the Drive archive link.
 The archive has one folder per selected tender. Original PDFs become available
 before the AI-generated Word pack. A persistent `Tender Actions` queue retains
 requests/output links if the daily report is sorted, refreshed, or a tender expires.
-The report synchronizer captures requests before clearing managed report values.
+The queue is stored in a separate `Tender Document Queue` spreadsheet so deleting
+or rebuilding the report's tabs does not delete requests. The report synchronizer
+captures requests before clearing managed report values.
 The scanner and document worker share a concurrency group to avoid writing at the
 same time. Manual user edits during a refresh can still race; verify the request
 appears in the persistent queue.

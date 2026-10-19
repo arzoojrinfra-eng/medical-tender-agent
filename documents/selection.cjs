@@ -14,13 +14,14 @@ function reconcile(records,views){
 }
 
 async function prepare(token,base,meta,sheets,request){
- if(!meta.sheets.some(s=>s.properties.title==='Tender Actions'))return {sheets,enabled:false};
- const response=await request(token,base+'/values/'+encodeURIComponent("'Tender Actions'!A1:H10000"));
+ if(!base.endsWith('/191xZInoalWsBSTrAYn_4DSwIdSUbKiFJzzBF2_-U-wo'))return {sheets,enabled:false};
+ const queueBase='https://sheets.googleapis.com/v4/spreadsheets/1GjrNPdc_utxb0qy-HPQoPPfjYR0Z2p60-0736To91Kg';
+ const response=await request(token,queueBase+'/values/'+encodeURIComponent("'Tender Actions'!A1:H10000"));
  const values=response.values||[];if(values[0]?.[0]!=='KEY'||values[0]?.[2]!=='ACTION')throw Error('Persistent tender queue schema changed');
  const views=[];
  for(const s of meta.sheets){const p=s.properties;if(p.title==='Tender Actions'||p.gridProperties?.columnCount<14)continue;const v=await request(token,base+'/values/'+encodeURIComponent(a1(p.title)+'!A1:Q'+p.gridProperties.rowCount));views.push(v.values||[])}
  const {byKey,newRows}=reconcile(values.slice(1).filter(r=>r.some(x=>x!=='')),views);
- if(newRows.length)await request(token,base+'/values/'+encodeURIComponent("'Tender Actions'!A:H")+':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values:newRows})});
+ if(newRows.length)await request(token,queueBase+'/values/'+encodeURIComponent("'Tender Actions'!A:H")+':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values:newRows})});
  const enriched=sheets.map(s=>{if(!isTender(s))return s;return {...s,rows:s.rows.map((row,i)=>{const next=row.slice(0,13);while(next.length<13)next.push('');if(!i)return [...next,...HEADERS];const url=urlFor(row),r=url?byKey.get(key(text(row[1]),url)):null;return [...next,...(r?[r[2],r[3],r[4],r[5]]:['','Not requested',url,''])]})}});
  return {sheets:enriched,enabled:true};
 }
