@@ -8,3 +8,6 @@ google-github-actions-credentials-*.json
 *.log
 *.zip
 *.tar.gz
+document-output/
+documents/.deps/
+documents/__pycache__/

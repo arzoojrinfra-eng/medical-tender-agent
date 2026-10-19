@@ -1,0 +1,15 @@
+'use strict';
+const assert=require('node:assert/strict'),{reconcile,key}=require('./selection.cjs');
+const header=['SL. NO.','TENDER / BID NO.'];
+const row=(id,url,action)=>{const r=Array(17).fill('');r[1]=id;r[12]='GeM | '+url;r[13]=action;r[15]=url;return r};
+const url='https://bidplus.gem.gov.in/showbidDocument/1',other='https://tenders.wb.gov.in/nicgep/app';
+const first=reconcile([],[[header,row('B1',url,'Prepare Checklist'),row('B2',url,'')]]);
+assert.equal(first.newRows.length,1);
+first.newRows[0][3]='Needs review — Word pack available';first.newRows[0][5]='https://drive.google.com/file/d/output/view';
+const sorted=reconcile(first.newRows,[[header,row('B2',url,''),row('B1',url,'Prepare Checklist')],[header,row('B1',other,'Prepare Checklist')]]);
+assert.equal(sorted.newRows.length,1);
+assert.equal(sorted.byKey.get(key('B1',url))[5],'https://drive.google.com/file/d/output/view');
+assert.notEqual(key('B1',url),key('B1',other));
+assert.equal(reconcile(first.newRows,[]).byKey.size,1,'removed tender keeps its output');
+assert.throws(()=>reconcile([...first.newRows,...first.newRows],[]));
+console.log('Selection persistence passed: row reorder, same ID across portals, duplicate detection, removed tender, output link preservation.');

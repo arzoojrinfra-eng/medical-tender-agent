@@ -1,0 +1,47 @@
+name: Selected Tender Documents
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: medical-tender-monitor
+  cancel-in-progress: false
+
+jobs:
+  documents:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install document tools
+        run: python -m pip install -r documents/requirements.txt
+      - name: Verify document processing rules
+        run: python -m unittest discover -s documents -p test_worker.py
+      - name: Authenticate to Google without a private key
+        id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: project-0800cc96-4a23-4e5e-9b7
+          workload_identity_provider: projects/311126609126/locations/global/workloadIdentityPools/github-actions/providers/medical-tender-agent
+          service_account: medical-tender-agent@project-0800cc96-4a23-4e5e-9b7.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_lifetime: 3600s
+          access_token_scopes: |-
+            https://www.googleapis.com/auth/drive
+            https://www.googleapis.com/auth/spreadsheets
+      - name: Process selected tender documents
+        env:
+          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DOCUMENT_ARCHIVE_FILE_ID: ${{ vars.DOCUMENT_ARCHIVE_FILE_ID }}
+          GEMINI_MODEL: gemini-2.5-flash
+        run: python documents/worker.py
