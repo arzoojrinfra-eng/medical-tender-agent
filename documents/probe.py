@@ -5,7 +5,20 @@ import requests
 key = os.environ.get('GEMINI_API_KEY')
 if not key:
     raise SystemExit('GEMINI_API_KEY is missing')
-r = requests.post('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+r = requests.get('https://generativelanguage.googleapis.com/v1beta/models',
+                 headers={'x-goog-api-key': key}, timeout=60)
+print('Model catalog HTTP', r.status_code)
+if not r.ok:
+    print('Catalog error status:', r.json().get('error', {}).get('status', 'unknown'))
+    raise SystemExit(1)
+available = [m['name'].removeprefix('models/') for m in r.json().get('models', [])
+             if 'generateContent' in m.get('supportedGenerationMethods', [])]
+print('Available text model names:', ', '.join(available))
+model = next((m for m in ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-flash'] if m in available), None)
+if not model:
+    raise SystemExit('No configured free-tier candidate is available')
+print('Testing model:', model)
+r = requests.post('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent',
                   headers={'x-goog-api-key': key},
                   json={'contents': [{'parts': [{'text': 'Reply with exactly OK.'}]}],
                         'generationConfig': {'maxOutputTokens': 1024}}, timeout=60)
