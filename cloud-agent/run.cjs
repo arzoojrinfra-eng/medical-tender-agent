@@ -32,8 +32,9 @@ async function main(){
   const output=path.resolve(root,config.outputFile),sheets=make(medical,reviews,statuses,output,active);
   const validation=require('node:child_process').spawnSync(process.execPath,[path.join(root,'validate.cjs')],{encoding:'utf8',maxBuffer:10*1024*1024});
   if(validation.status!==0)throw Error(`Pre-upload validation failed: ${validation.stderr||validation.stdout}`);
-  let sync;
-  try{const daily=await google.sync({spreadsheetId:config.spreadsheetId,sheets,xlsxFile:output,excelDriveFileId:process.env.EXCEL_DRIVE_FILE_ID||'1Zmv4LNd7q2Ot9sbJlWMYcgGzLTfVFPr1'}),master=await google.sync({spreadsheetId:config.masterSpreadsheetId,sheets:masterSheets(medical,reviews,statuses)});sync={ok:daily.ok&&master.ok,daily,master}}catch(e){sync={ok:false,error:e.message}}
+  let sync;const sourceErrors=statuses.filter(x=>!x.ok);
+  if(sourceErrors.length)sync={ok:false,skipped:true,reason:'Sheet update blocked because one or more required sources failed: '+sourceErrors.map(x=>x.source||x.state).join(', ')};
+  else try{const daily=await google.sync({spreadsheetId:config.spreadsheetId,sheets,xlsxFile:output,excelDriveFileId:process.env.EXCEL_DRIVE_FILE_ID||'1Zmv4LNd7q2Ot9sbJlWMYcgGzLTfVFPr1'}),master=await google.sync({spreadsheetId:config.masterSpreadsheetId,sheets:masterSheets(medical,reviews,statuses)});sync={ok:daily.ok&&master.ok,daily,master}}catch(e){sync={ok:false,error:e.message}}
   statuses.push({source:'Google Drive/Sheets',ok:!!sync.ok,error:sync.ok?undefined:(sync.error||sync.reason)});
   const summary={ok:statuses.every(x=>x.ok)&&!!sync.ok,started:started.toISOString(),finished:new Date().toISOString(),cutoff:cutoff.toISOString(),sources:statuses,counts:{fresh:fresh.length,active:active.length,medical:medical.length,review:reviews.length,excluded:active.length-medical.length-reviews.length},output,sync};
   writeJson(statusFile,summary);console.log(JSON.stringify(summary,null,2));if(!summary.ok)process.exitCode=2;
