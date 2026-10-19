@@ -1,0 +1,10 @@
+cloud-agent/data/
+cloud-agent/chrome-*/
+bid-documents/
+state-all-*.json
+organisations-*.json
+Daily Tender Report.xlsx
+google-github-actions-credentials-*.json
+*.log
+*.zip
+*.tar.gz

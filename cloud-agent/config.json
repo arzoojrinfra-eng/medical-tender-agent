@@ -1,0 +1,13 @@
+{
+  "timezone": "Asia/Kolkata",
+  "intervalMinutes": 15,
+  "lookbackDays": 3,
+  "reportStartDate": "2026-10-17",
+  "outputFile": "../Daily Tender Report.xlsx",
+  "stateCache": "../state-all-listings.json",
+  "stateCacheMaxMinutes": 14,
+  "spreadsheetId": "191xZInoalWsBSTrAYn_4DSwIdSUbKiFJzzBF2_-U-wo",
+  "masterSpreadsheetId": "1cl-00FwGwqUtgzXSZVO3F65-HM2_BLfFPLSwSJcdatI",
+  "driveFolderId": "1ySgfdAV4vfrmOj--xmkf1of1qr5Y0qZ8",
+  "states": ["West Bengal", "Odisha", "Bihar", "Assam", "Jharkhand", "Arunachal Pradesh", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Tripura", "Sikkim"]
+}

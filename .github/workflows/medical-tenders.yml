@@ -1,0 +1,53 @@
+name: Medical Tender Monitor
+
+on:
+  schedule:
+    - cron: "2,17,32,47 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: medical-tender-monitor
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Check out agent
+        uses: actions/checkout@v7
+
+      - name: Authenticate to Google without a key
+        id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: project-0800cc96-4a23-4e5e-9b7
+          workload_identity_provider: __WORKLOAD_IDENTITY_PROVIDER__
+          service_account: medical-tender-agent@project-0800cc96-4a23-4e5e-9b7.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_lifetime: 3600s
+          access_token_scopes: |-
+            https://www.googleapis.com/auth/drive
+            https://www.googleapis.com/auth/spreadsheets
+
+      - name: Scan all portals and update reports
+        env:
+          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          GOOGLE_SERVICE_ACCOUNT_EMAIL: medical-tender-agent@project-0800cc96-4a23-4e5e-9b7.iam.gserviceaccount.com
+          EXCEL_DRIVE_FILE_ID: 1Zmv4LNd7q2Ot9sbJlWMYcgGzLTfVFPr1
+          CHROME_PATH: google-chrome
+          TZ: Asia/Kolkata
+        run: node cloud-agent/run.cjs --full
+
+      - name: Save diagnostic status
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: tender-agent-status-${{ github.run_number }}
+          path: cloud-agent/data/last-run.json
+          retention-days: 7
+          if-no-files-found: warn
