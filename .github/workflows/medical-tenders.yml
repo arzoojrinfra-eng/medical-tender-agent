@@ -39,6 +39,7 @@ jobs:
           GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
           GOOGLE_SERVICE_ACCOUNT_EMAIL: medical-tender-agent@project-0800cc96-4a23-4e5e-9b7.iam.gserviceaccount.com
           EXCEL_DRIVE_FILE_ID: 1Zmv4LNd7q2Ot9sbJlWMYcgGzLTfVFPr1
+          USE_GEM_FEED: '1'
           CHROME_PATH: google-chrome
           TZ: Asia/Kolkata
         run: node cloud-agent/run.cjs --full

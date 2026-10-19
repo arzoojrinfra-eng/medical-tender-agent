@@ -1,0 +1,7 @@
+'use strict';
+const config=require('./config.json'),google=require('./google.cjs');
+async function collect(){const id=config.masterSpreadsheetId,feed=await google.getValues(id,"'GeM Feed'!A:P"),status=await google.getValues(id,"'GeM Feed Status'!A:C"),rows=feed.values||[],head=(rows.shift()||[]).map(String),at=n=>head.indexOf(n),records=rows.filter(r=>r[at('ID')]).map(r=>({source:'GeM',sourceGroup:'GeM',id:String(r[at('ID')]),title:r[at('TITLE')]||'',quantity:r[at('QUANTITY')]||'See bid',publishDate:r[at('PUBLISH DATE')]||'',dueDate:r[at('DUE DATE')]||'',organization:r[at('ORGANIZATION')]||'',city:r[at('CITY')]||'',state:r[at('STATE')]||'',emd:r[at('EMD')]||'See bid document',estimatedValue:r[at('ESTIMATED VALUE')]||'Not disclosed',preBid:r[at('PRE-BID')]||'See bid document',url:r[at('URL')]||'',raw:{b_id:r[at('B_ID')]||'',b_bid_type:r[at('BID_TYPE')]||'',b_bid_number:r[at('ID')]||'',matchedStates:String(r[at('MATCHED STATES')]||'').split('|').filter(Boolean)}}));
+ const map=new Map((status.values||[]).map(r=>[String(r[0]||''),r[1]])),last=new Date(map.get('LAST SUCCESS')),age=Date.now()-last.getTime(),ok=map.get('STATUS')==='OK'&&Number.isFinite(age)&&age<45*60000&&records.length>0;
+ return {records,status:[{source:'GeM relay',ok,count:records.length,lastSuccess:map.get('LAST SUCCESS')||'',error:ok?undefined:`Feed missing or stale; status=${map.get('STATUS')||'missing'}`}],complete:ok}
+}
+module.exports={collect};

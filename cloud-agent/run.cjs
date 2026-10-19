@@ -15,7 +15,7 @@ async function main(){
   if(fs.existsSync(dbFile))prior=JSON.parse(fs.readFileSync(dbFile,'utf8'));
   const full=process.argv.includes('--full');
   const adapters=[
-   ['GeM',()=>require('./gem.cjs').collect({lookbackDays:config.lookbackDays,full})],
+   ['GeM',()=>process.env.USE_GEM_FEED==='1'?require('./gem-feed.cjs').collect():require('./gem.cjs').collect({lookbackDays:config.lookbackDays,full})],
    ['Bihar eProc 2.0',()=>require('./bihar.cjs').collect()],
    ['NIC state portals',()=>require('./nic.cjs').collect({cacheFile:path.resolve(root,config.stateCache),cacheMaxMinutes:config.stateCacheMaxMinutes,force:full,node:process.execPath})],
    ['Manipur eProcurement',()=>require('./manipur.cjs').collect()]
@@ -34,7 +34,7 @@ async function main(){
   if(validation.status!==0)throw Error(`Pre-upload validation failed: ${validation.stderr||validation.stdout}`);
   let sync;const sourceErrors=statuses.filter(x=>!x.ok);
   if(sourceErrors.length)sync={ok:false,skipped:true,reason:'Sheet update blocked because one or more required sources failed: '+sourceErrors.map(x=>x.source||x.state).join(', ')};
-  else try{const daily=await google.sync({spreadsheetId:config.spreadsheetId,sheets,xlsxFile:output,excelDriveFileId:process.env.EXCEL_DRIVE_FILE_ID||'1Zmv4LNd7q2Ot9sbJlWMYcgGzLTfVFPr1'}),master=await google.sync({spreadsheetId:config.masterSpreadsheetId,sheets:masterSheets(medical,reviews,statuses)});sync={ok:daily.ok&&master.ok,daily,master}}catch(e){sync={ok:false,error:e.message}}
+  else try{const daily=await google.sync({spreadsheetId:config.spreadsheetId,sheets,xlsxFile:output,excelDriveFileId:process.env.EXCEL_DRIVE_FILE_ID||'1Zmv4LNd7q2Ot9sbJlWMYcgGzLTfVFPr1',preserveDateTabs:true}),master=await google.sync({spreadsheetId:config.masterSpreadsheetId,sheets:masterSheets(medical,reviews,statuses)});sync={ok:daily.ok&&master.ok,daily,master}}catch(e){sync={ok:false,error:e.message}}
   statuses.push({source:'Google Drive/Sheets',ok:!!sync.ok,error:sync.ok?undefined:(sync.error||sync.reason)});
   const summary={ok:statuses.every(x=>x.ok)&&!!sync.ok,started:started.toISOString(),finished:new Date().toISOString(),cutoff:cutoff.toISOString(),sources:statuses,counts:{fresh:fresh.length,active:active.length,medical:medical.length,review:reviews.length,excluded:active.length-medical.length-reviews.length},output,sync};
   writeJson(statusFile,summary);console.log(JSON.stringify(summary,null,2));if(!summary.ok)process.exitCode=2;
