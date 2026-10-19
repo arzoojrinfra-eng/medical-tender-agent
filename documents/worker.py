@@ -547,7 +547,6 @@ def main():
         processed += 1
         record[3], record[7] = "Processing", os.environ.get("GITHUB_RUN_ID", now())
         update_record(g, i, record)
-        restore_views(g)
         try:
             cached = cached_sources(g, record)
             if cached:
@@ -558,7 +557,6 @@ def main():
                 except requests.RequestException:
                     record[3] = "Waiting for source relay — portal unreachable from cloud"
                     update_record(g, i, record)
-                    restore_views(g)
                     continue
             folder = OUT / re.sub(r"[^A-Za-z0-9_-]+", "-", record[1])
             folder.mkdir(parents=True, exist_ok=True)
@@ -587,7 +585,6 @@ def main():
             record[3] = "Needs Input — " + message
             print("Tender job failed:", type(exc).__name__, message)
         update_record(g, i, record)
-        restore_views(g)
     restore_views(g)
     print(json.dumps({"finished": now(), "processed": processed, "failed": failed, "queue_count": len(records)}))
     if failed:

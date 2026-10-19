@@ -5,6 +5,11 @@ import json
 import os
 import zipfile
 
+if os.name == 'nt':
+    # Use Windows' trusted certificate store; never disable TLS verification.
+    import truststore
+    truststore.inject_into_ssl()
+
 import worker
 
 
@@ -56,5 +61,6 @@ if __name__ == '__main__':
     try:
         main()
     except Exception as error:
-        print('Source relay stopped:', type(error).__name__)
+        detail = str(error).replace(os.environ.get('GOOGLE_OAUTH_ACCESS_TOKEN', 'NO_TOKEN'), '[REDACTED]')
+        print('Source relay stopped:', type(error).__name__, detail[:220])
         raise SystemExit(1)

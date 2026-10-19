@@ -7,6 +7,10 @@ cloud. GeM currently refuses connections from the GitHub runner. A local source
 relay downloads official PDFs and stages them in a private owner-created Drive
 cache. For this fallback, the user's computer must be on and the Google account
 must remain authorized. Cloud-only GeM retrieval is not working and is not claimed.
+The Windows task `TenderDocumentSourceRelay` runs once per minute while the user
+is signed in, with a hidden process and overlap lock. It uses keyless Google
+impersonation, stages at most 6-hour-old source packs, and never stores the Gemini
+key locally. Its local health file is `tender-actions/source-relay-status.json`.
 
 Column O shows status, P the official original URL, and Q the Drive archive link.
 The archive has one folder per selected tender. Original PDFs become available
