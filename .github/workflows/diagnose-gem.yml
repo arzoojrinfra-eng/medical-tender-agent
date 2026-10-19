@@ -8,11 +8,15 @@ permissions:
 
 jobs:
   diagnose:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 5
     steps:
       - name: Test GeM over curl and Node
+        shell: bash
         run: |
-          curl -4 -L --max-time 30 -sS -o /tmp/gem.html -w 'curl_ipv4_http=%{http_code} bytes=%{size_download}\n' https://bidplus.gem.gov.in/all-bids || true
-          curl -6 -L --max-time 30 -sS -o /tmp/gem6.html -w 'curl_ipv6_http=%{http_code} bytes=%{size_download}\n' https://bidplus.gem.gov.in/all-bids || true
+          curl -4 -L --max-time 30 -sS -o gem.html -w 'curl_ipv4_http=%{http_code} bytes=%{size_download} remote=%{remote_ip}\n' https://bidplus.gem.gov.in/all-bids || true
           node -e "fetch('https://bidplus.gem.gov.in/all-bids',{signal:AbortSignal.timeout(30000)}).then(async r=>console.log('node_http='+r.status+' bytes='+(await r.text()).length)).catch(e=>{console.error(e);console.error(e.cause)})"
