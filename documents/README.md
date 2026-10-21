@@ -11,6 +11,10 @@ The Windows task `TenderDocumentSourceRelay` runs once per minute while the user
 is signed in, with a hidden process and overlap lock. It uses keyless Google
 impersonation, stages at most 6-hour-old source packs, and never stores the Gemini
 key locally. Its local health file is `tender-actions/source-relay-status.json`.
+Once a queued tender's source pack is available, the local launcher dispatches
+the cloud workflow directly instead of waiting for the GitHub cron schedule.
+A two-minute dispatch cooldown prevents repeated launches while a job is queued.
+It also dispatches when sources are already cached but the request is still queued.
 
 Column O shows status, P the official original URL, and Q the Drive archive link.
 The archive has one folder per selected tender. Original PDFs become available

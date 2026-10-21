@@ -26,11 +26,13 @@ def main():
             entries[item.filename] = archive.read(item)
     index = json.loads(entries.get('index.json', b'{}'))
     changed = False
+    dispatch_needed = False
     for record in records:
         if record[2] != 'Prepare Checklist' or not (record[3] == 'Queued' or record[3].startswith(('Needs setup', 'Waiting for source'))):
             continue
         old = index.get(record[0])
         if old and (worker.datetime.now(worker.timezone.utc) - worker.datetime.fromisoformat(old['retrieved_at'])).total_seconds() < 21600:
+            dispatch_needed = True
             continue
         docs, _, issues = worker.collect_documents(record[4], record[1])
         prefix = hashlib.sha256(record[0].encode()).hexdigest()[:20]
@@ -43,6 +45,7 @@ def main():
         index[record[0]] = {'tender_number': record[1], 'official_url': record[4], 'retrieved_at': worker.now(),
                           'documents': saved, 'issues': issues}
         changed = True
+        dispatch_needed = True
         print('Official source pack retrieved:', len(docs), 'PDFs')
     if changed:
         entries['index.json'] = json.dumps(index).encode()
@@ -55,6 +58,7 @@ def main():
         g.api('PATCH', 'https://www.googleapis.com/upload/drive/v3/files/' + cache_id,
               params={'uploadType': 'media'}, headers={'Content-Type': 'application/zip'}, data=buffer.getvalue())
     print('Source relay completed; cache_updated=' + str(changed))
+    print('cloud_dispatch_needed=' + str(dispatch_needed))
 
 
 if __name__ == '__main__':
